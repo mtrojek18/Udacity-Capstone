@@ -1,29 +1,28 @@
 require('source-map-support').install();
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda'
-import { createTodo } from '../../businessLogic/todos';
-import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
+import { addToShoppingList } from '../../businessLogic/shoppingList';
+import { AddItemRequest } from '../../requests/AddItemRequest'
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  // TODO: Implement creating a new TODO item
   const authorization = event.headers.Authorization
   const split = authorization.split(' ')
   const jwtToken = split[1]
 
-  const newTodo: CreateTodoRequest = JSON.parse(event.body)
+  const shoppingListItem: AddItemRequest = JSON.parse(event.body)
 
-  if (newTodo.name === '') {
+  if (shoppingListItem.item === '' || shoppingListItem.price === 0 || shoppingListItem.quantity === 0) {
     return {
       statusCode: 400,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Credentials': true
       },
-      body: "Name Required!"
+      body: "Item, Price & Quantity Required!"
     }
     
   }
 
-  const todoItem = await createTodo(newTodo, jwtToken)
+  const addShoppingListItem = await addToShoppingList(shoppingListItem, jwtToken)
   
   return {
     statusCode: 201,
@@ -32,7 +31,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       'Access-Control-Allow-Credentials': true
     },
     body: JSON.stringify({
-      item: todoItem
+      item: addShoppingListItem
     })
   }
 }

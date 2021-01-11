@@ -4,26 +4,26 @@ import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
-import { TodoItem } from '../models/TodoItem'
-import { TodoUpdate } from '../models/TodoUpdate'
+import { ShoppingListItem } from '../models/ShoppingListItem'
+import { ItemUpdate } from '../models/ItemUpdate'
 import { createLogger } from '../utils/logger'
 
-const logger = createLogger('todos')
+const logger = createLogger('items')
 
-export class TodoAccess {
+export class ShoppingListAccess {
 
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
-    private readonly todoTable = process.env.TODOS_TABLE,
-    private readonly indexName = process.env.TODOS_ID_INDEX) {
+    private readonly shoppingListTable = process.env.SHOPPING_LIST_TABLE,
+    private readonly indexName = process.env.LIST_ID_INDEX) {
   }
 
   //============================================================
-  // Getting all To Do Items
-  //============================================================
-  async getAllTodoItems(userId: string): Promise<TodoItem[]> {
+  // Getting all items on my shopping list
+  //=============================== =============================
+  async getItemsOnShoppingList(userId: string): Promise<ShoppingListItem[]> {
     const result = await this.docClient.query({
-      TableName: this.todoTable,
+      TableName: this.shoppingListTable,
       IndexName: this.indexName,
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
@@ -32,75 +32,75 @@ export class TodoAccess {
     }).promise()
 
     const items = result.Items
-    return items as TodoItem[]
+    return items as ShoppingListItem[]
   }
 
   //============================================================
-  // Create To Do
+  // Add Item to Shopping List
   //============================================================
-  async createTodo(todoItem: TodoItem): Promise<TodoItem> {
+  async addToShoppingList(item: ShoppingListItem): Promise<ShoppingListItem> {
     await this.docClient.put({
-      TableName: this.todoTable,
-      Item: todoItem
+      TableName: this.shoppingListTable,
+      Item: item
     }).promise()
 
-    return todoItem
+    return item
   }
 
   //============================================================
-  // Delete To Do
+  // Delete Shopping List Item
   //============================================================
-  async deleteTodo(todoId: string, userId: string ): Promise<void> {
+  async deleteItem(itemId: string, userId: string ): Promise<void> {
     await this.docClient.delete({
-      TableName: this.todoTable,
+      TableName: this.shoppingListTable,
       Key: {
-        todoId,
+        itemId,
         userId
     }
     }).promise()   
   }
 
   //============================================================
-  // Update To Do
+  // Update Shopping List Item
   //============================================================
-  async updateTodoItem(todoId: string, userId: string, todoUpdate: TodoUpdate,  ): Promise<void> {
+  async updateShoppingListItem(itemId: string, userId: string, itemUpdate: ItemUpdate,  ): Promise<void> {
     await this.docClient.update({
-      TableName: this.todoTable,
+      TableName: this.shoppingListTable,
       Key: {
-        todoId,
+        itemId,
         userId
       },
-      UpdateExpression: 'set #n = :name, done = :done, dueDate = :dueDate',
+      UpdateExpression: 'set #n = :item, done = :done',
       ExpressionAttributeValues: {
-        ':name': todoUpdate.name,
-        ':done': todoUpdate.done,
-        ':dueDate': todoUpdate.dueDate,
+        ':item': itemUpdate.item,
+        ':done': itemUpdate.done,
+        //':dueDate': itemUpdate.dueDate,
       },
       ExpressionAttributeNames: {
-        '#n': 'name'
+        '#n': 'item'
       },
     }).promise()   
   }
 
   //============================================================
-  // Update To Do Url
+  // Update Item Image Url
   //============================================================
-  async updateTodoUrl(todoId: string, userId: string): Promise<void> {
+  async updateItemUrl(itemId: string, userId: string): Promise<void> {
 
-    let attachmentUrl: string = 'https://' + process.env.S3_BUCKET + '.s3.amazonaws.com/' + todoId
+    let attachmentUrl: string = 'https://' + process.env.S3_BUCKET + '.s3.amazonaws.com/' + itemId
 
     logger.info(attachmentUrl);
       
       try {
              
-        logger.info("todo id: "+todoId)
+        logger.info("item id: "+itemId)
         logger.info("user id"+userId)
         
         await this.docClient.update({
-          TableName: this.todoTable,
+          TableName: this.shoppingListTable,
           Key: {
              userId,
-             todoId 
+             itemId 
           },
           UpdateExpression: "SET attachmentUrl = :attachmentUrl",
           ExpressionAttributeValues: {

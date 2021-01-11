@@ -1,5 +1,4 @@
-service:
-  name: capstone-shopping-list-app
+service: capstone-shopping-list-app
 
 plugins:
   - serverless-webpack
@@ -19,9 +18,9 @@ provider:
   region: ${opt:region, 'us-east-2'}
 
   environment:
-    TODOS_TABLE: TodosTable-${self:provider.stage}
-    TODOS_ID_INDEX: TodosIdIndex
-    S3_BUCKET: mrojek-serverless-todo-${self:provider.stage}
+    SHOPPING_LIST_TABLE: ShoppingListTable-${self:provider.stage}
+    SHOPPING_LIST_ID_INDEX: ShoppingListIdIndex
+    S3_BUCKET: mrojek-serverless-shoppinglist-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 600
 
 custom:
@@ -36,13 +35,12 @@ functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function
-  GetTodos:
-    handler: src/lambda/http/getTodos.handler
+  GetShoppingListItems:
+    handler: src/lambda/http/getShoppingListItems.handler
     events:
       - http:
           method: get
-          path: todos
+          path: shoppinglist
           cors: true
           authorizer: Auth
     iamRoleStatements:
@@ -50,38 +48,36 @@ functions:
         Action:
           - dynamodb:Query
           - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOPPING_LIST_TABLE}
       - Effect: Allow
         Action:
           - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_ID_INDEX}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOPPING_LIST_TABLE}/index/${self:provider.environment.SHOPPING_LIST_ID_INDEX}
       - Effect: Allow
         Action:
           - s3:GetObject
         Resource: arn:aws:s3:::${self:provider.environment.S3_BUCKET}/*
 
-  # TODO: Configure this function
-  CreateTodo:
-    handler: src/lambda/http/createTodo.handler
+  AddShoppingListItem:
+    handler: src/lambda/http/addShoppingListItem.handler
     events:
       - http:
           method: post
-          path: todos
+          path: shoppinglist
           cors: true
           authorizer: Auth
     iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:PutItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOPPING_LIST_TABLE}
 
-  # TODO: Configure this function
-  UpdateTodo:
-    handler: src/lambda/http/updateTodo.handler
+  UpdateShoppingListItem:
+    handler: src/lambda/http/updateShoppingListItem.handler
     events:
       - http:
           method: patch
-          path: todos/{todoId}
+          path: shoppinglist/{itemId}
           cors: true
           authorizer: Auth
     iamRoleStatements:
@@ -89,15 +85,14 @@ functions:
         Action:
           - dynamodb:GetItem
           - dynamodb:UpdateItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOPPING_LIST_TABLE}
 
-  # TODO: Configure this function
-  DeleteTodo:
-    handler: src/lambda/http/deleteTodo.handler
+  DeleteShoppingListItem:
+    handler: src/lambda/http/deleteShoppingListItem.handler
     events:
       - http:
           method: delete
-          path: todos/{todoId}
+          path: shoppinglist/{itemId}
           cors: true
           authorizer: Auth
     iamRoleStatements:
@@ -105,15 +100,14 @@ functions:
         Action:
           - dynamodb:DeleteItem
           - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOPPING_LIST_TABLE}
 
-  # TODO: Configure this function
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
     events:
       - http:
           method: post
-          path: todos/{todoId}/attachment
+          path: shoppinglist/{itemId}/attachment
           cors: true
           authorizer: Auth
     iamRoleStatements:
@@ -122,13 +116,13 @@ functions:
           - dynamodb:Query
           - dynamodb:GetItem
           - dynamodb:UpdateItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOPPING_LIST_TABLE}
       - Effect: Allow
         Action:
           - dynamodb:Query
           - dynamodb:GetItem
           - dynamodb:UpdateItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_ID_INDEX}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOPPING_LIST_TABLE}/index/${self:provider.environment.SHOPPING_LIST_ID_INDEX}
       - Effect: Allow
         Action:
           - s3:PutObject
@@ -148,35 +142,33 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-    #TODO: Add any necessary AWS resources
-    TodosTable:
+    ShoppingListTable:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-          - AttributeName: todoId
+          - AttributeName: itemId
             AttributeType: S
           - AttributeName: userId
             AttributeType: S
-          - AttributeName: createdAt
+          - AttributeName: dateAdded
             AttributeType: S
         KeySchema:
           - AttributeName: userId
             KeyType: HASH
-          - AttributeName: todoId
+          - AttributeName: itemId
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
-        TableName: ${self:provider.environment.TODOS_TABLE}
+        TableName: ${self:provider.environment.SHOPPING_LIST_TABLE}
         LocalSecondaryIndexes:
-          - IndexName: ${self:provider.environment.TODOS_ID_INDEX}
+          - IndexName: ${self:provider.environment.SHOPPING_LIST_ID_INDEX}
             KeySchema:
               - AttributeName: userId
                 KeyType: HASH
-              - AttributeName: createdAt
+              - AttributeName: dateAdded
                 KeyType: RANGE
             Projection:
-              ProjectionType: ALL # What attributes will be copied to an index
+              ProjectionType: ALL
 
-    # S3 Bucket
     AttachmentsBucket:
       Type: AWS::S3::Bucket
       Properties:
@@ -195,7 +187,6 @@ resources:
                 - HEAD
               MaxAge: 3000
 
-    # Bucket Policy
     BucketPolicy:
       Type: AWS::S3::BucketPolicy
       Properties:

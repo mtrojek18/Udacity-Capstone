@@ -4,7 +4,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } f
 //import * as uuid from 'uuid';
 //import * as middy from 'middy'
 import { createLogger } from '../../utils/logger'
-import { updateTodoUrl } from '../../businessLogic/todos';
+import { updateItemUrl } from '../../businessLogic/shoppingList';
 
 //export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -29,7 +29,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   logger.info("Presigned URL: "+presignedUploadUrl)
 
   try {
-    await updateTodoUrl(todoId,jwtToken)
+    await updateItemUrl(todoId,jwtToken)
   } catch (error) {
     logger.info(error)
   }
