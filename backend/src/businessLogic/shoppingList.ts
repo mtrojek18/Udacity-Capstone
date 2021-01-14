@@ -63,6 +63,9 @@ export async function updateShoppingListItem(
 ): Promise<void> {
 
   const userId = parseUserId(jwtToken)
+  logger.info("user id: "+userId);
+  logger.info("item id: "+itemId)
+  logger.info(UpdateItemRequest);
 
   await shoppingListAccess.updateShoppingListItem(itemId, userId, UpdateItemRequest)
 

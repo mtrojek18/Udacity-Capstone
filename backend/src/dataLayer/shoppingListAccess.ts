@@ -70,15 +70,48 @@ export class ShoppingListAccess {
         itemId,
         userId
       },
-      UpdateExpression: 'set #n = :item, done = :done',
+      UpdateExpression: 'set #n = :item, done = :done, quantity = :quantity, price = :price, lineAmount = :lineAmount',
       ExpressionAttributeValues: {
         ':item': itemUpdate.item,
         ':done': itemUpdate.done,
+        ':quantity': itemUpdate.quantity,
+        ':price': itemUpdate.price,
+        ':lineAmount': itemUpdate.price*itemUpdate.quantity
         //':dueDate': itemUpdate.dueDate,
       },
       ExpressionAttributeNames: {
         '#n': 'item'
       },
+
+
+      // function createUpdateItemInput() {
+      //   return {
+      //     "TableName": "ShoppingListTable-dev",
+      //     "Key": {
+      //       "userId": {
+      //         "S": "google-oauth2|109229503016597948485"
+      //       },
+      //       "itemId": {
+      //         "S": "3364042d-b8de-46e2-bffd-d94fa6d726f6"
+      //       }
+      //     },
+      //     "UpdateExpression": "SET #90100 = :90100, #90101 = :90101",
+      //     "ExpressionAttributeValues": {
+      //       ":90100": {
+      //         "BOOL": true
+      //       },
+      //       ":90101": {
+      //         "N": "3"
+      //       }
+      //     },
+      //     "ExpressionAttributeNames": {
+      //       "#90100": "done",
+      //       "#90101": "quantity"
+      //     }
+      //   }
+      // }
+
+
     }).promise()   
   }
 
