@@ -11,7 +11,8 @@ import {
   Icon,
   Input,
   Image,
-  Loader
+  Loader,
+  Segment
 } from 'semantic-ui-react'
 
 import {
@@ -49,13 +50,29 @@ export class Items extends React.PureComponent<ItemsProps, ItemsState> {
     this.setState({ itemName: event.target.value })
   }
 
+  handleQuantityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      this.setState({ quantity: parseInt(event.target.value) })
+    } catch (error) {
+      this.setState({ quantity: 1 })
+    }
+  }
+
+  handlePriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      this.setState({ price: parseInt(event.target.value) })
+    } catch (error) {
+      this.setState({ price: 0.99 })
+    }
+  }
+
   onEditButtonClick = (itemId: string) => {
     this.props.history.push(`/shoppinglist/${itemId}/edit`)
   }
 
   onItemCreate = async (event: React.ChangeEvent<HTMLButtonElement>) => {
     try {
-      const dateAdded = this.calculateDueDate()
+      console.log(event)
       console.log('State Item Name: ' + this.state.itemName)
       console.log('State Quantity: ' + this.state.quantity)
       console.log('State Price: ' + this.state.price)
@@ -92,7 +109,6 @@ export class Items extends React.PureComponent<ItemsProps, ItemsState> {
   }
 
   onItemCheck = async (pos: number) => {
-    alert('on to check triggered')
     try {
       const item = this.state.shoppingListItems[pos]
       await patchItem(this.props.auth.getIdToken(), item.itemId, {
@@ -101,14 +117,55 @@ export class Items extends React.PureComponent<ItemsProps, ItemsState> {
         price: item.price,
         done: !item.done
       })
-      alert('patch ran')
       this.setState({
         shoppingListItems: update(this.state.shoppingListItems, {
           [pos]: { done: { $set: !item.done } }
         })
       })
     } catch {
-      alert('Item deletion failed')
+      alert('Item Check failed')
+    }
+  }
+
+  onAddQuantity = async (pos: number) => {
+    try {
+      const item = this.state.shoppingListItems[pos]
+      await patchItem(this.props.auth.getIdToken(), item.itemId, {
+        item: item.item,
+        quantity: item.quantity + 1,
+        price: item.price,
+        done: item.done
+      })
+      this.setState({
+        shoppingListItems: update(this.state.shoppingListItems, {
+          [pos]: { quantity: { $set: item.quantity + 1 } }
+        })
+      })
+    } catch {
+      alert('Item Patch failed')
+    }
+  }
+
+  onMinusQuantity = async (pos: number) => {
+    try {
+      const item = this.state.shoppingListItems[pos]
+      let qtyToUpdate = item.quantity - 1
+      if (qtyToUpdate < 0) {
+        qtyToUpdate = 0
+      }
+      await patchItem(this.props.auth.getIdToken(), item.itemId, {
+        item: item.item,
+        quantity: qtyToUpdate,
+        price: item.price,
+        done: item.done
+      })
+      this.setState({
+        shoppingListItems: update(this.state.shoppingListItems, {
+          [pos]: { quantity: { $set: qtyToUpdate } }
+        })
+      })
+    } catch {
+      alert('Item Patch failed')
     }
   }
 
@@ -142,26 +199,39 @@ export class Items extends React.PureComponent<ItemsProps, ItemsState> {
 
   renderCreateItemInput() {
     return (
-      <Grid.Row>
-        <Grid.Column width={16}>
-          <Input
-            action={{
-              color: 'teal',
-              labelPosition: 'left',
-              icon: 'add',
-              content: 'New task',
-              onClick: this.onItemCreate
-            }}
-            fluid
-            actionPosition="left"
-            placeholder="To change the world..."
-            onChange={this.handleNameChange}
-          />
-        </Grid.Column>
-        <Grid.Column width={16}>
-          <Divider />
-        </Grid.Column>
-      </Grid.Row>
+      <React.Fragment>
+        <Grid columns={3}>
+          <Grid.Row>
+            <Grid.Column>
+              <Input
+                action={{
+                  color: 'teal',
+                  labelPosition: 'left',
+                  icon: 'add',
+                  content: 'Add Item',
+                  onClick: this.onItemCreate
+                }}
+                // fluid
+                actionPosition="left"
+                placeholder="Add Shopping List Item Here..."
+                onChange={this.handleNameChange}
+              />
+            </Grid.Column>
+            <Grid.Column>
+              <Input
+                placeholder="Quantity"
+                onChange={this.handleQuantityChange}
+              ></Input>
+            </Grid.Column>
+            <Grid.Column>
+              <Input
+                placeholder="Price"
+                onChange={this.handlePriceChange}
+              ></Input>
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
+      </React.Fragment>
     )
   }
 
@@ -187,57 +257,66 @@ export class Items extends React.PureComponent<ItemsProps, ItemsState> {
     console.log('Start Rendering Item List')
     console.log(this.state.shoppingListItems)
     return (
-      <Grid padded>
+      <Grid celled>
         {this.state.shoppingListItems.map((item, pos) => {
           return (
-            <Grid.Row key={item.itemId}>
-              <Grid.Column width={1} verticalAlign="middle">
+            <Grid.Row verticalAlign="middle" key={item.itemId}>
+              <Grid.Column width={1}>
                 <Checkbox
                   onChange={() => this.onItemCheck(pos)}
                   checked={item.done}
                 />
               </Grid.Column>
-              <Grid.Column width={10} verticalAlign="middle">
-                {item.item}
+              <Grid.Column width={3}>
+                {/* <Image src="https://react.semantic-ui.com/images/wireframe/image.png" /> */}
+                {item.attachmentUrl && (
+                  <Image src={item.attachmentUrl} size="small" wrapped />
+                )}
               </Grid.Column>
-              <Grid.Column width={3} floated="right">
-                {item.dateAdded}
+              <Grid.Column width={3}>{item.item}</Grid.Column>
+              <Grid.Column width={4}>
+                <Button
+                  icon
+                  color="grey"
+                  onClick={() => this.onMinusQuantity(pos)}
+                >
+                  <Icon name="minus" />
+                </Button>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                {item.quantity}
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+
+                <Button
+                  icon
+                  color="grey"
+                  onClick={() => this.onAddQuantity(pos)}
+                >
+                  <Icon name="add" />
+                </Button>
               </Grid.Column>
-              <Grid.Column width={1} floated="right">
+              <Grid.Column width={2}>
+                <Segment>${item.price} / ea</Segment>
+              </Grid.Column>
+              <Grid.Column width={2}>
                 <Button
                   icon
                   color="blue"
                   onClick={() => this.onEditButtonClick(item.itemId)}
                 >
-                  <Icon name="pencil" />
+                  <Icon name="edit outline" />
                 </Button>
-              </Grid.Column>
-              <Grid.Column width={1} floated="right">
                 <Button
                   icon
                   color="red"
                   onClick={() => this.onItemDelete(item.itemId)}
                 >
-                  <Icon name="delete" />
+                  <Icon name="trash alternate" />
                 </Button>
-              </Grid.Column>
-              {item.attachmentUrl && (
-                <Image src={item.attachmentUrl} size="small" wrapped />
-              )}
-              <Grid.Column width={16}>
-                <Divider />
               </Grid.Column>
             </Grid.Row>
           )
         })}
       </Grid>
     )
-  }
-
-  calculateDueDate(): string {
-    const date = new Date()
-    date.setDate(date.getDate() + 7)
-
-    return dateFormat(date, 'yyyy-mm-dd') as string
   }
 }

@@ -1,20 +1,16 @@
 require('source-map-support').install();
 import * as AWS  from 'aws-sdk'
 import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
-//import * as uuid from 'uuid';
-//import * as middy from 'middy'
 import { createLogger } from '../../utils/logger'
 import { updateItemUrl } from '../../businessLogic/shoppingList';
 
-//export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  // TODO: Return a presigned URL to upload a file for a TODO item with the provided id
   const authorization = event.headers.Authorization
   const split = authorization.split(' ')
   const jwtToken = split[1]
 
-  const logger = createLogger('todos')
-  const todoId = event.pathParameters.todoId
+  const logger = createLogger('item_url')
+  const itemId = event.pathParameters.itemId
 
   const s3 = new AWS.S3({ 
     signatureVersion: 'v4' 
@@ -22,14 +18,14 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   const presignedUploadUrl = s3.getSignedUrl('putObject', {
     Bucket: process.env.S3_BUCKET,
-    Key: todoId,
+    Key: itemId,
     Expires: parseInt(process.env.SIGNED_URL_EXPIRATION)
   })
 
   logger.info("Presigned URL: "+presignedUploadUrl)
 
   try {
-    await updateItemUrl(todoId,jwtToken)
+    await updateItemUrl(itemId,jwtToken)
   } catch (error) {
     logger.info(error)
   }

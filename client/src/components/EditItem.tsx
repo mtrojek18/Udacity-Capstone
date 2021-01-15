@@ -76,7 +76,7 @@ export class EditItem extends React.PureComponent<
   render() {
     return (
       <div>
-        <h1>Upload new image</h1>
+        <h1>Upload picture of item</h1>
 
         <Form onSubmit={this.handleSubmit}>
           <Form.Field>

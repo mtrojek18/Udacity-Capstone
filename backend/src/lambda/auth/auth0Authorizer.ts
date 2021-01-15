@@ -1,11 +1,9 @@
 import { CustomAuthorizerEvent, CustomAuthorizerResult } from 'aws-lambda'
 require('source-map-support').install();
 
-//import { verify, decode } from 'jsonwebtoken'
 import { decode,  verify } from 'jsonwebtoken'
 import { createLogger } from '../../utils/logger'
 import Axios from 'axios'
-//import { Jwt } from '../../auth/Jwt'
 import { JwtPayload } from '../../auth/JwtPayload'
 import { Jwt } from '../../auth/Jwt';
 import jwkToPem from 'jwk-to-pem'
