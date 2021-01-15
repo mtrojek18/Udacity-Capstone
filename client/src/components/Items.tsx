@@ -60,7 +60,7 @@ export class Items extends React.PureComponent<ItemsProps, ItemsState> {
 
   handlePriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      this.setState({ price: parseInt(event.target.value) })
+      this.setState({ price: parseFloat(event.target.value) })
     } catch (error) {
       this.setState({ price: 0.99 })
     }
